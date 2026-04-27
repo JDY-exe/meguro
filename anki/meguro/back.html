@@ -1,0 +1,162 @@
+<div class="meguro meguro-back">
+  <div class="meguro-front-head">
+    <div class="meguro-instruction" style="text-align: left; margin-bottom: 0;">
+      Tell the difference between the following
+    </div>
+    <div class="meguro-watermark meguro-watermark-inline" aria-hidden="true">meguro</div>
+  </div>
+
+  <div id="meguro-back-items" class="meguro-back-items">
+    {{#Term1}}
+    <article class="meguro-item meguro-back-item meguro-entry" data-slot="1">
+      <div class="meguro-back-row">
+        <div class="meguro-term">{{furigana:Term1}}</div>
+        <div class="meguro-details">
+          {{#Def1}}
+          <ol class="meguro-def-list">
+            <li class="meguro-def">{{Def1}}</li>
+          </ol>
+          {{/Def1}}
+          {{#Ex1}}
+          <div class="meguro-example">"{{Ex1}}"</div>
+          {{/Ex1}}
+        </div>
+      </div>
+      <div class="meguro-term-seed" hidden>{{text:Term1}}</div>
+    </article>
+    {{/Term1}}
+    {{#Term2}}
+    <article class="meguro-item meguro-back-item meguro-entry" data-slot="2">
+      <div class="meguro-back-row">
+        <div class="meguro-term">{{furigana:Term2}}</div>
+        <div class="meguro-details">
+          {{#Def2}}
+          <ol class="meguro-def-list">
+            <li class="meguro-def">{{Def2}}</li>
+          </ol>
+          {{/Def2}}
+          {{#Ex2}}
+          <div class="meguro-example">"{{Ex2}}"</div>
+          {{/Ex2}}
+        </div>
+      </div>
+      <div class="meguro-term-seed" hidden>{{text:Term2}}</div>
+    </article>
+    {{/Term2}}
+    {{#Term3}}
+    <article class="meguro-item meguro-back-item meguro-entry" data-slot="3">
+      <div class="meguro-back-row">
+        <div class="meguro-term">{{furigana:Term3}}</div>
+        <div class="meguro-details">
+          {{#Def3}}
+          <ol class="meguro-def-list">
+            <li class="meguro-def">{{Def3}}</li>
+          </ol>
+          {{/Def3}}
+          {{#Ex3}}
+          <div class="meguro-example">"{{Ex3}}"</div>
+          {{/Ex3}}
+        </div>
+      </div>
+      <div class="meguro-term-seed" hidden>{{text:Term3}}</div>
+    </article>
+    {{/Term3}}
+    {{#Term4}}
+    <article class="meguro-item meguro-back-item meguro-entry" data-slot="4">
+      <div class="meguro-back-row">
+        <div class="meguro-term">{{furigana:Term4}}</div>
+        <div class="meguro-details">
+          {{#Def4}}
+          <ol class="meguro-def-list">
+            <li class="meguro-def">{{Def4}}</li>
+          </ol>
+          {{/Def4}}
+          {{#Ex4}}
+          <div class="meguro-example">"{{Ex4}}"</div>
+          {{/Ex4}}
+        </div>
+      </div>
+      <div class="meguro-term-seed" hidden>{{text:Term4}}</div>
+    </article>
+    {{/Term4}}
+  </div>
+</div>
+
+<script>
+(function () {
+  function normalizeTerm(value) {
+    try {
+      return (value || "").normalize("NFKC").replace(/\s+/g, "");
+    } catch (err) {
+      return (value || "").replace(/\s+/g, "");
+    }
+  }
+
+  function dayKey() {
+    var now = new Date();
+    function pad2(value) {
+      return value < 10 ? "0" + value : String(value);
+    }
+    var year = String(now.getFullYear());
+    var month = pad2(now.getMonth() + 1);
+    var day = pad2(now.getDate());
+    return year + "-" + month + "-" + day;
+  }
+
+  function hash32(input) {
+    var hash = 2166136261;
+    for (var i = 0; i < input.length; i += 1) {
+      hash ^= input.charCodeAt(i);
+      hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+    }
+    return hash >>> 0;
+  }
+
+  function lcg(seed) {
+    return function () {
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      return seed / 4294967296;
+    };
+  }
+
+  function shuffledOrder(length, seed) {
+    var order = [];
+    for (var i = 0; i < length; i += 1) {
+      order.push(i);
+    }
+    var random = lcg(seed);
+    for (var j = order.length - 1; j > 0; j -= 1) {
+      var k = Math.floor(random() * (j + 1));
+      var temp = order[j];
+      order[j] = order[k];
+      order[k] = temp;
+    }
+    return order;
+  }
+
+  var container = document.getElementById("meguro-back-items");
+  if (!container) {
+    return;
+  }
+
+  var items = Array.prototype.slice.call(container.querySelectorAll(".meguro-item"));
+  if (items.length < 2) {
+    return;
+  }
+
+  var normalizedTerms = items.map(function (item) {
+    var seedNode = item.querySelector(".meguro-term-seed");
+    return normalizeTerm(seedNode ? seedNode.textContent : "");
+  });
+
+  var seedInput = dayKey() + "|" + normalizedTerms.join("|");
+  var seed = hash32(seedInput);
+  var order = shuffledOrder(items.length, seed);
+
+  var fragment = document.createDocumentFragment();
+  for (var i = 0; i < order.length; i += 1) {
+    fragment.appendChild(items[order[i]]);
+  }
+  container.appendChild(fragment);
+})();
+</script>

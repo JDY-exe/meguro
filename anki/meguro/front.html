@@ -1,0 +1,112 @@
+<div class="meguro meguro-front">
+  <div class="meguro-front-head">
+    <div class="meguro-instruction">Tell the difference between the following</div>
+    <div class="meguro-watermark meguro-watermark-inline" aria-hidden="true">meguro</div>
+  </div>
+
+  <div id="meguro-front-items" class="meguro-front-items">
+    {{#Term1}}
+    <div class="meguro-item meguro-front-item" data-slot="1">
+      <div class="meguro-term">{{kanji:Term1}}</div>
+      <div class="meguro-term-seed" hidden>{{text:Term1}}</div>
+    </div>
+    {{/Term1}}
+    {{#Term2}}
+    <div class="meguro-item meguro-front-item" data-slot="2">
+      <div class="meguro-term">{{kanji:Term2}}</div>
+      <div class="meguro-term-seed" hidden>{{text:Term2}}</div>
+    </div>
+    {{/Term2}}
+    {{#Term3}}
+    <div class="meguro-item meguro-front-item" data-slot="3">
+      <div class="meguro-term">{{kanji:Term3}}</div>
+      <div class="meguro-term-seed" hidden>{{text:Term3}}</div>
+    </div>
+    {{/Term3}}
+    {{#Term4}}
+    <div class="meguro-item meguro-front-item" data-slot="4">
+      <div class="meguro-term">{{kanji:Term4}}</div>
+      <div class="meguro-term-seed" hidden>{{text:Term4}}</div>
+    </div>
+    {{/Term4}}
+  </div>
+</div>
+
+<script>
+(function () {
+  function normalizeTerm(value) {
+    try {
+      return (value || "").normalize("NFKC").replace(/\s+/g, "");
+    } catch (err) {
+      return (value || "").replace(/\s+/g, "");
+    }
+  }
+
+  function dayKey() {
+    var now = new Date();
+    function pad2(value) {
+      return value < 10 ? "0" + value : String(value);
+    }
+    var year = String(now.getFullYear());
+    var month = pad2(now.getMonth() + 1);
+    var day = pad2(now.getDate());
+    return year + "-" + month + "-" + day;
+  }
+
+  function hash32(input) {
+    var hash = 2166136261;
+    for (var i = 0; i < input.length; i += 1) {
+      hash ^= input.charCodeAt(i);
+      hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+    }
+    return hash >>> 0;
+  }
+
+  function lcg(seed) {
+    return function () {
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      return seed / 4294967296;
+    };
+  }
+
+  function shuffledOrder(length, seed) {
+    var order = [];
+    for (var i = 0; i < length; i += 1) {
+      order.push(i);
+    }
+    var random = lcg(seed);
+    for (var j = order.length - 1; j > 0; j -= 1) {
+      var k = Math.floor(random() * (j + 1));
+      var temp = order[j];
+      order[j] = order[k];
+      order[k] = temp;
+    }
+    return order;
+  }
+
+  var container = document.getElementById("meguro-front-items");
+  if (!container) {
+    return;
+  }
+
+  var items = Array.prototype.slice.call(container.querySelectorAll(".meguro-item"));
+  if (items.length < 2) {
+    return;
+  }
+
+  var normalizedTerms = items.map(function (item) {
+    var seedNode = item.querySelector(".meguro-term-seed");
+    return normalizeTerm(seedNode ? seedNode.textContent : "");
+  });
+
+  var seedInput = dayKey() + "|" + normalizedTerms.join("|");
+  var seed = hash32(seedInput);
+  var order = shuffledOrder(items.length, seed);
+
+  var fragment = document.createDocumentFragment();
+  for (var i = 0; i < order.length; i += 1) {
+    fragment.appendChild(items[order[i]]);
+  }
+  container.appendChild(fragment);
+})();
+</script>
