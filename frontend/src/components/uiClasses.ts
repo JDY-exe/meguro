@@ -1,0 +1,9 @@
+export const panelClass = "rounded-xl border border-stone-700/80 bg-stone-900/75 p-5 shadow-2xl shadow-black/25 backdrop-blur";
+export const eyebrowClass = "mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-pink-300";
+export const headingClass = "text-lg font-semibold tracking-tight text-stone-50";
+export const labelClass = "grid gap-2 text-sm font-medium text-stone-300";
+export const inputClass = "w-full rounded-lg border border-stone-700 bg-stone-950/65 px-3 py-2.5 text-stone-100 outline-none transition placeholder:text-stone-600 focus:border-pink-400 focus:ring-2 focus:ring-pink-400/20";
+export const secondaryButtonClass = "rounded-lg border border-stone-700 bg-stone-800/70 px-3 py-2 text-sm font-semibold text-stone-100 transition hover:-translate-y-0.5 hover:border-stone-600 hover:bg-stone-800 disabled:opacity-45";
+export const primaryButtonClass = "w-full rounded-lg bg-pink-500 px-4 py-3 font-semibold text-white shadow-lg shadow-pink-950/35 transition hover:-translate-y-0.5 hover:bg-pink-400 disabled:opacity-45";
+export const mutedBoxClass = "my-3 rounded-lg border border-stone-700/70 bg-stone-950/50 p-3 text-sm leading-6 text-stone-300";
+export const warningBoxClass = "my-3 rounded-lg border border-pink-400/30 bg-pink-500/10 p-3 text-sm leading-6 text-pink-100";
