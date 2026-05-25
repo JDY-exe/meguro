@@ -11,7 +11,7 @@ import type { AnkiClient } from "./services/ankiConnect";
 import { createMockAnkiClient, createRealAnkiClient, validateAnkiConnection, validateMeguroModel } from "./services/ankiConnect";
 import { buildAnkiFields, createEmptyEntry, formatInlineFurigana, MAX_MEGURO_TERMS, stripInlineFurigana, validateEntries } from "./services/cardBuilder";
 import { clearDictionary, getDictionaryMetadata, indexDictionaryBuffer, searchDictionary, searchDictionaryHeadwords } from "./services/dictionary";
-import { markdownToSafeHtml } from "./services/markdown";
+import { dictionarySelectionsToHtml, markdownToSafeHtml } from "./services/markdown";
 import type { CardEntry, DictionarySenseSelection, DictionaryStatus, DictionaryWordResult } from "./types/cards";
 import "./styles.css";
 
@@ -180,13 +180,13 @@ function App() {
     if (!dictionaryModalEntryId || selections.length === 0) {
       return;
     }
-    const definitionMarkdown = dictionarySelectionsToMarkdown(selections);
+    const definitionHtml = dictionarySelectionsToHtml(selections);
     const example = selections.flatMap((selection) => selection.sense.examples).find((candidate) => candidate.japanese)?.japanese ?? "";
     updateEntry(dictionaryModalEntryId, {
       term: formatInlineFurigana(word.term, word.reading),
       reading: "",
-      definitionMarkdown,
-      definitionHtml: markdownToSafeHtml(definitionMarkdown),
+      definitionMarkdown: definitionHtml,
+      definitionHtml,
       example,
       source: "jitendex",
     });
@@ -312,22 +312,8 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-function dictionarySelectionsToMarkdown(selections: DictionarySenseSelection[]): string {
-  return selections
-    .map((selection) => {
-      const tags = groupTags(selection.group);
-      const glosses = selection.sense.glosses.join("; ");
-      return tags ? `- **${tags}**: ${glosses}` : `- ${glosses}`;
-    })
-    .join("\n");
-}
-
 function firstExample(word: DictionaryWordResult): string {
   return word.senseGroups.flatMap((group) => group.senses).flatMap((sense) => sense.examples).find((candidate) => candidate.japanese)?.japanese ?? "";
-}
-
-function groupTags(selectionGroup: DictionarySenseSelection["group"]): string {
-  return selectionGroup.tags.map((tag) => tag.title || tag.label).filter(Boolean).join(", ");
 }
 
 export default App;

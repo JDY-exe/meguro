@@ -1,4 +1,6 @@
-﻿function escapeHtml(value: string): string {
+import type { DictionarySenseSelection } from "../types/cards.js";
+
+function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -43,4 +45,29 @@ export function definitionsToMarkdown(definitions: string[]): string {
     return cleanDefinitions[0];
   }
   return cleanDefinitions.map((definition) => `- ${definition}`).join("\n");
+}
+
+export function dictionarySelectionsToHtml(selections: DictionarySenseSelection[]): string {
+  const rows = selections
+    .map((selection) => {
+      const metadata = groupTags(selection);
+      const metadataHtml = metadata ? `<div class="meguro-dict-tags">${escapeHtml(metadata)}</div>` : "";
+      const glosses = escapeHtml(selection.sense.glosses.join("; "));
+      return [
+        '<section class="meguro-dict-sense">',
+        `<div class="meguro-dict-number">${selection.sense.index + 1}</div>`,
+        '<div class="meguro-dict-body">',
+        metadataHtml,
+        `<div class="meguro-dict-gloss">${glosses}</div>`,
+        "</div>",
+        "</section>",
+      ].join("");
+    })
+    .join("");
+
+  return rows ? `<div class="meguro-dict-definition">${rows}</div>` : "";
+}
+
+function groupTags(selection: DictionarySenseSelection): string {
+  return selection.group.tags.map((tag) => tag.title || tag.label).filter(Boolean).join(", ");
 }

@@ -180,18 +180,69 @@
   gap: 8px;
 }
 
-.meguro-def-list {
-  margin: 0;
-  padding-left: 1.25em;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.meguro-def {
+.meguro-definition {
   font-size: 16px;
   line-height: 1.35;
   font-weight: 500;
+}
+
+.meguro-definition p {
+  margin: 0;
+}
+
+.meguro-definition p + p {
+  margin-top: 6px;
+}
+
+.meguro-definition ul,
+.meguro-definition ol {
+  margin: 0;
+  padding-left: 1.25em;
+}
+
+.meguro-definition li + li {
+  margin-top: 4px;
+}
+
+.meguro-dict-definition {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.meguro-dict-sense {
+  display: grid;
+  grid-template-columns: 1.6em minmax(0, 1fr);
+  column-gap: 9px;
+  align-items: start;
+}
+
+.meguro-dict-number {
+  color: #d7dbe1;
+  font-family: "Noto Sans", "Noto Sans JP", sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.65;
+  opacity: 0.72;
+  text-align: right;
+}
+
+.meguro-dict-body {
+  min-width: 0;
+}
+
+.meguro-dict-tags {
+  color: #d7dbe1;
+  font-family: "Noto Sans", "Noto Sans JP", sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+  margin-bottom: 2px;
+  opacity: 0.74;
+}
+
+.meguro-dict-gloss {
+  overflow-wrap: anywhere;
 }
 
 .meguro-example {
@@ -245,8 +296,21 @@ ruby rt {
     row-gap: 8px;
   }
 
-  .meguro-def {
+  .meguro-definition {
     font-size: 15px;
+  }
+
+  .meguro-dict-sense {
+    grid-template-columns: 1.35em minmax(0, 1fr);
+    column-gap: 7px;
+  }
+
+  .meguro-dict-number {
+    font-size: 12px;
+  }
+
+  .meguro-dict-tags {
+    font-size: 11px;
   }
 
   .meguro-example {
