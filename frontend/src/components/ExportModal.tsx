@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, ChevronDown } from "lucide-react";
+import { Check, ChevronDown, X } from "lucide-react";
 import { eyebrowClass, headingClass, inputClass, labelClass, primaryButtonClass, secondaryButtonClass, warningBoxClass } from "./uiClasses";
 
 interface ExportModalProps {
@@ -35,7 +35,9 @@ export function ExportModal({
             <p className={eyebrowClass}>export</p>
             <h2 className={headingClass} id="export-title">AnkiConnect</h2>
           </div>
-          <button className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-stone-700 bg-stone-800 text-stone-200 transition hover:bg-stone-700" aria-label="Close export modal" onClick={onClose}>x</button>
+          <button className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-stone-700 bg-stone-800 text-stone-200 transition hover:bg-stone-700" aria-label="Close export modal" onClick={onClose}>
+            <X aria-hidden="true" size={18} strokeWidth={2.2} />
+          </button>
         </div>
         <DeckCombobox decks={decks} isLoadingDecks={isLoadingDecks} selectedDeck={selectedDeck} onSelectedDeckChange={onSelectedDeckChange} />
         <button className={secondaryButtonClass} onClick={onRefreshDecks} disabled={isLoadingDecks || isExporting}>

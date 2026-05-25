@@ -15,11 +15,14 @@ import { dictionarySelectionsToHtml, markdownToSafeHtml } from "./services/markd
 import type { CardEntry, DictionarySenseSelection, DictionaryStatus, DictionaryWordResult } from "./types/cards";
 import "./styles.css";
 
+const DEFAULT_SELECTED_DECK = "meguro::Demo";
+const SELECTED_DECK_STORAGE_KEY = "meguro:selected-deck";
+
 function App() {
   const [entries, setEntries] = useState<CardEntry[]>([createEmptyEntry(), createEmptyEntry()]);
   const [dictionaryStatus, setDictionaryStatus] = useState<DictionaryStatus>({ state: "idle" });
   const [decks, setDecks] = useState<string[]>([]);
-  const [selectedDeck, setSelectedDeck] = useState("meguro::Demo");
+  const [selectedDeck, setSelectedDeck] = useState(() => localStorage.getItem(SELECTED_DECK_STORAGE_KEY) ?? DEFAULT_SELECTED_DECK);
   const [ankiMessage, setAnkiMessage] = useState("Real AnkiConnect mode is on. Anki must be running with AnkiConnect enabled.");
   const [isLoadingDecks, setIsLoadingDecks] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -42,7 +45,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (dictionaryStatus.state !== "loading" && dictionaryStatus.state !== "downloading") {
+    if (dictionaryStatus.state !== "loading" && dictionaryStatus.state !== "downloading" && dictionaryStatus.state !== "error") {
       return;
     }
     const statusTimer = window.setInterval(() => void refreshDictionaryStatus(), 1500);
@@ -54,6 +57,13 @@ function App() {
     setAnkiMessage("Real AnkiConnect mode is on. Anki must be running with AnkiConnect enabled.");
     void loadAnkiDecks();
   }, [ankiClient]);
+
+  useEffect(() => {
+    const deckName = selectedDeck.trim();
+    if (deckName) {
+      localStorage.setItem(SELECTED_DECK_STORAGE_KEY, deckName);
+    }
+  }, [selectedDeck]);
 
   const loadAnkiDecks = async () => {
     try {
@@ -257,6 +267,8 @@ function App() {
       setAnkiMessage("Sending note to AnkiConnect...");
       const noteId = await ankiClient.addNote({ deckName, fields, tags: [] });
       setSelectedDeck(deckName);
+      setEntries([createEmptyEntry(), createEmptyEntry()]);
+      setIsExportModalOpen(false);
       setAnkiMessage(`Exported note ${noteId}.`);
     } catch (error: unknown) {
       setAnkiMessage(errorMessage(error));
