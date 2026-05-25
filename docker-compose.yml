@@ -20,7 +20,7 @@ services:
     build:
       context: ./frontend
       args:
-        VITE_DICTIONARY_API_BASE: https://api.meguro.yuan.tokyo
+        VITE_DICTIONARY_API_BASE: https://meguro-api.yuan.tokyo
     restart: unless-stopped
     depends_on:
       - backend
