@@ -24,26 +24,33 @@ function selection(index: number, glosses: string[], tagTitle = "Godan verb - Ik
   };
 }
 
-test("renders a dictionary sense with metadata, number, and glosses", () => {
+test("renders a dictionary sense group with metadata, number, and glosses", () => {
   assert.equal(
     dictionarySelectionsToHtml([selection(0, ["to go", "to move (towards)"])]),
-    '<div class="meguro-dict-definition"><section class="meguro-dict-sense"><div class="meguro-dict-number">1</div><div class="meguro-dict-body"><div class="meguro-dict-tags">Godan verb - Iku/Yuku special class</div><div class="meguro-dict-gloss">to go; to move (towards)</div></div></section></div>',
+    '<div class="meguro-dict-definition"><section class="meguro-dict-group"><div class="meguro-dict-tags">Godan verb - Iku/Yuku special class</div><ol class="meguro-dict-list"><li class="meguro-dict-gloss" value="1">to go; to move (towards)</li></ol></section></div>',
   );
 });
 
-test("renders multiple dictionary senses with stable source numbering", () => {
+test("groups consecutive dictionary senses with matching metadata", () => {
   assert.equal(
-    dictionarySelectionsToHtml([selection(0, ["to go"]), selection(2, ["to pass"])])
-      .match(/meguro-dict-number">[0-9]+/g)
-      ?.join(","),
-    'meguro-dict-number">1,meguro-dict-number">3',
+    dictionarySelectionsToHtml([selection(0, ["to go"]), selection(2, ["to pass"])]),
+    '<div class="meguro-dict-definition"><section class="meguro-dict-group"><div class="meguro-dict-tags">Godan verb - Iku/Yuku special class</div><ol class="meguro-dict-list"><li class="meguro-dict-gloss" value="1">to go</li><li class="meguro-dict-gloss" value="3">to pass</li></ol></section></div>',
+  );
+});
+
+test("starts a new dictionary group when metadata changes", () => {
+  assert.equal(
+    dictionarySelectionsToHtml([selection(0, ["to go"]), selection(1, ["to come"], "Kuru verb - special class")])
+      .match(/<section class="meguro-dict-group">/g)
+      ?.length,
+    2,
   );
 });
 
 test("escapes dictionary tags and glosses", () => {
   assert.equal(
     dictionarySelectionsToHtml([selection(0, ['to "mark" <script>'], "verb & auxiliary")]),
-    '<div class="meguro-dict-definition"><section class="meguro-dict-sense"><div class="meguro-dict-number">1</div><div class="meguro-dict-body"><div class="meguro-dict-tags">verb &amp; auxiliary</div><div class="meguro-dict-gloss">to &quot;mark&quot; &lt;script&gt;</div></div></section></div>',
+    '<div class="meguro-dict-definition"><section class="meguro-dict-group"><div class="meguro-dict-tags">verb &amp; auxiliary</div><ol class="meguro-dict-list"><li class="meguro-dict-gloss" value="1">to &quot;mark&quot; &lt;script&gt;</li></ol></section></div>',
   );
 });
 
