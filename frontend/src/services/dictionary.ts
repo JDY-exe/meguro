@@ -1,6 +1,6 @@
 import type { DictionaryExample, DictionaryMetadata, DictionarySense, DictionarySenseGroup, DictionaryTag, DictionaryWordResult, DictionaryXref } from "../types/cards.js";
 
-export const DEFAULT_JITENDEX_URL = "https://github.com/stephenmk/Jitendex/releases/latest/download/jitendex-yomitan.zip";
+export const DEFAULT_JITENDEX_URL = "https://github.com/stephenmk/stephenmk.github.io/releases/latest/download/jitendex-yomitan.zip";
 export const JITENDEX_ATTRIBUTION = "Jitendex by Stephen Kraus, derived from JMdict and Tatoeba data, licensed under CC BY-SA 4.0.";
 
 interface DictionaryStatusResponse {

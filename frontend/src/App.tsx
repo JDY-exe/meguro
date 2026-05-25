@@ -10,7 +10,7 @@ import { TermBuilder } from "./components/TermBuilder";
 import type { AnkiClient } from "./services/ankiConnect";
 import { createMockAnkiClient, createRealAnkiClient, validateAnkiConnection, validateMeguroModel } from "./services/ankiConnect";
 import { buildAnkiFields, createEmptyEntry, formatInlineFurigana, MAX_MEGURO_TERMS, stripInlineFurigana, validateEntries } from "./services/cardBuilder";
-import { clearDictionary, getDictionaryMetadata, indexDictionaryBuffer, searchDictionary, searchDictionaryHeadwords } from "./services/dictionary";
+import { getDictionaryStatus, hydrateDictionaryEntries, reindexDictionary, searchDictionaryHeadwords } from "./services/dictionary";
 import { dictionarySelectionsToHtml, markdownToSafeHtml } from "./services/markdown";
 import type { CardEntry, DictionarySenseSelection, DictionaryStatus, DictionaryWordResult } from "./types/cards";
 import "./styles.css";
@@ -31,6 +31,7 @@ function App() {
   const [dictionarySearchError, setDictionarySearchError] = useState<string | null>(null);
   const [isSearchingDictionary, setIsSearchingDictionary] = useState(false);
   const dictionarySearchRequestId = useRef(0);
+  const allowDictionaryReindex = import.meta.env.VITE_ALLOW_DICTIONARY_REINDEX === "true";
 
   const usableEntries = useMemo(() => entries.filter((entry) => entry.term.trim()), [entries]);
   const fields = useMemo(() => buildAnkiFields(usableEntries), [usableEntries]);
@@ -38,10 +39,16 @@ function App() {
   const ankiClient = useMemo<AnkiClient>(() => (mockMode ? createMockAnkiClient() : createRealAnkiClient()), [mockMode]);
 
   useEffect(() => {
-    getDictionaryMetadata()
-      .then((metadata) => setDictionaryStatus(metadata ? { state: "ready", metadata } : { state: "idle" }))
-      .catch((error: unknown) => setDictionaryStatus({ state: "error", message: errorMessage(error) }));
+    void refreshDictionaryStatus();
   }, []);
+
+  useEffect(() => {
+    if (dictionaryStatus.state !== "loading" && dictionaryStatus.state !== "downloading") {
+      return;
+    }
+    const statusTimer = window.setInterval(() => void refreshDictionaryStatus(), 1500);
+    return () => window.clearInterval(statusTimer);
+  }, [dictionaryStatus.state]);
 
   useEffect(() => {
     localStorage.setItem("meguro:mock-anki", String(mockMode));
@@ -85,20 +92,26 @@ function App() {
     setEntries((current) => (current.length <= 2 ? current : current.filter((entry) => entry.id !== id)));
   };
 
-  const resetDictionary = async () => {
-    await clearDictionary();
-    setDictionaryStatus({ state: "idle" });
+  const refreshDictionaryStatus = async () => {
+    try {
+      const status = await getDictionaryStatus();
+      if (status.state === "ready" && status.metadata) {
+        setDictionaryStatus({ state: "ready", metadata: status.metadata });
+      } else if (status.state === "loading") {
+        setDictionaryStatus({ state: "loading" });
+      } else {
+        setDictionaryStatus({ state: "error", message: status.error ?? "Dictionary backend is not ready." });
+      }
+    } catch (error: unknown) {
+      setDictionaryStatus({ state: "error", message: errorMessage(error) });
+    }
   };
 
-  const uploadDictionary = async (file: File | null) => {
-    if (!file) {
-      return;
-    }
+  const resetDictionary = async () => {
     try {
-      setDictionaryStatus({ state: "downloading", message: `Reading ${file.name}...` });
-      const buffer = await file.arrayBuffer();
-      const metadata = await indexDictionaryBuffer(buffer, `local file: ${file.name}`, (message) => setDictionaryStatus({ state: "downloading", message }));
-      setDictionaryStatus({ state: "ready", metadata });
+      setDictionaryStatus({ state: "downloading", message: "Reindexing Jitendex on the backend..." });
+      await reindexDictionary();
+      window.setTimeout(() => void refreshDictionaryStatus(), 800);
     } catch (error: unknown) {
       setDictionaryStatus({ state: "error", message: errorMessage(error) });
     }
@@ -130,11 +143,15 @@ function App() {
       }
       setDictionaryResults(headwords);
 
-      const results = await searchDictionary(query);
+      await sleep(220);
       if (dictionarySearchRequestId.current !== requestId) {
         return;
       }
-      setDictionaryResults(results);
+      const results = await hydrateDictionaryEntries(headwords.map((headword) => headword.id));
+      if (dictionarySearchRequestId.current !== requestId) {
+        return;
+      }
+      setDictionaryResults(mergeHydratedResults(headwords, results));
     } catch (error: unknown) {
       if (dictionarySearchRequestId.current === requestId) {
         setDictionarySearchError(errorMessage(error));
@@ -255,7 +272,7 @@ function App() {
 
       <section className="grid items-start gap-5 lg:grid-cols-[minmax(0,340px)_minmax(0,1fr)_minmax(150px,0.28fr)]">
         <aside className="grid min-w-0 gap-5 lg:sticky lg:top-5 lg:max-w-[340px]">
-          <DictionaryPanel status={dictionaryStatus} onResetDictionary={resetDictionary} onUploadDictionary={uploadDictionary} />
+          <DictionaryPanel allowReindex={allowDictionaryReindex} status={dictionaryStatus} onResetDictionary={resetDictionary} />
           <PayloadPanel fields={fields} />
         </aside>
 
@@ -310,6 +327,18 @@ function App() {
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function mergeHydratedResults(headwords: DictionaryWordResult[], hydrated: DictionaryWordResult[]): DictionaryWordResult[] {
+  const hydratedById = new Map(hydrated.map((word) => [word.id, word]));
+  return headwords.map((headword) => {
+    const hydratedWord = hydratedById.get(headword.id);
+    return hydratedWord ? { ...hydratedWord, score: headword.score } : headword;
+  });
 }
 
 function firstExample(word: DictionaryWordResult): string {

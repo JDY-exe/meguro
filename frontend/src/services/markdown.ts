@@ -48,26 +48,33 @@ export function definitionsToMarkdown(definitions: string[]): string {
 }
 
 export function dictionarySelectionsToHtml(selections: DictionarySenseSelection[]): string {
-  const rows = selections
-    .map((selection) => {
-      const metadata = groupTags(selection);
-      const metadataHtml = metadata ? `<div class="meguro-dict-tags">${escapeHtml(metadata)}</div>` : "";
-      const glosses = escapeHtml(selection.sense.glosses.join("; "));
-      return [
-        '<section class="meguro-dict-sense">',
-        `<div class="meguro-dict-number">${selection.sense.index + 1}</div>`,
-        '<div class="meguro-dict-body">',
-        metadataHtml,
-        `<div class="meguro-dict-gloss">${glosses}</div>`,
-        "</div>",
-        "</section>",
-      ].join("");
+  const groups = groupSelectionsByMetadata(selections);
+  const sections = groups
+    .map((group) => {
+      const metadataHtml = group.metadata ? `<div class="meguro-dict-tags">${escapeHtml(group.metadata)}</div>` : "";
+      const items = group.selections
+        .map((selection) => `<li class="meguro-dict-gloss" value="${selection.sense.index + 1}">${escapeHtml(selection.sense.glosses.join("; "))}</li>`)
+        .join("");
+      return `<section class="meguro-dict-group">${metadataHtml}<ol class="meguro-dict-list">${items}</ol></section>`;
     })
     .join("");
 
-  return rows ? `<div class="meguro-dict-definition">${rows}</div>` : "";
+  return sections ? `<div class="meguro-dict-definition">${sections}</div>` : "";
 }
 
 function groupTags(selection: DictionarySenseSelection): string {
   return selection.group.tags.map((tag) => tag.title || tag.label).filter(Boolean).join(", ");
+}
+
+function groupSelectionsByMetadata(selections: DictionarySenseSelection[]): Array<{ metadata: string; selections: DictionarySenseSelection[] }> {
+  return selections.reduce<Array<{ metadata: string; selections: DictionarySenseSelection[] }>>((groups, selection) => {
+    const metadata = groupTags(selection);
+    const currentGroup = groups[groups.length - 1];
+    if (currentGroup && currentGroup.metadata === metadata) {
+      currentGroup.selections.push(selection);
+    } else {
+      groups.push({ metadata, selections: [selection] });
+    }
+    return groups;
+  }, []);
 }

@@ -8,5 +8,6 @@
     "rootDir": "src",
     "types": ["node"]
   },
+  "exclude": [],
   "include": ["src/services/dictionary.ts", "src/services/dictionary.test.ts", "src/services/markdown.ts", "src/services/markdown.test.ts", "src/types/cards.ts"]
 }
