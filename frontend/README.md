@@ -14,11 +14,16 @@ npm run dev
 
 The export panel starts in mock mode. Mock mode uses the same AnkiConnect payload shape as the real client and logs requests/responses to the browser console.
 
-Disable mock mode to call AnkiConnect at:
+Disable mock mode to call AnkiConnect directly at:
 
 ```text
 http://127.0.0.1:8765
 ```
+
+This matches Yomitan's direct AnkiConnect setup. If the browser gets a `403`,
+add this app's exact origin to AnkiConnect's `webCorsOriginList`, for example
+`http://127.0.0.1:5173`, and restart Anki. You can override the endpoint with
+`VITE_ANKI_CONNECT_URL`.
 
 The app validates that Anki has a `meguro` note type with the fields documented in `anki/meguro/README.md`. It does not auto-create or mutate the note type.
 

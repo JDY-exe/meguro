@@ -1,11 +1,12 @@
 ﻿import type { AnkiFields } from "../types/cards";
 import { REQUIRED_MEGURO_FIELDS } from "./cardBuilder";
 
-const ANKI_CONNECT_URL = "http://127.0.0.1:8765";
+const DEFAULT_ANKI_CONNECT_URL = "http://127.0.0.1:8765";
+const ANKI_CONNECT_URL = import.meta.env.VITE_ANKI_CONNECT_URL?.trim() || DEFAULT_ANKI_CONNECT_URL;
 const ANKI_CONNECT_VERSION = 6;
 const MISSING_MODEL_MESSAGE = "Anki note type `meguro` was not found. Create it with the fields listed in anki/meguro/README.md.";
 
-type AnkiAction = "version" | "deckNames" | "createDeck" | "modelNames" | "modelFieldNames" | "addNote";
+type AnkiAction = "requestPermission" | "version" | "deckNames" | "createDeck" | "modelNames" | "modelFieldNames" | "addNote";
 
 type AnkiParams = Record<string, unknown> | undefined;
 
@@ -20,6 +21,12 @@ interface AnkiConnectResponse<T> {
   error: string | null;
 }
 
+interface AnkiPermissionResult {
+  permission: "granted" | "denied";
+  requireApiKey?: boolean;
+  version?: number;
+}
+
 export interface MeguroNoteExport {
   deckName: string;
   fields: AnkiFields;
@@ -27,6 +34,7 @@ export interface MeguroNoteExport {
 }
 
 export interface AnkiClient {
+  requestPermission(): Promise<AnkiPermissionResult>;
   version(): Promise<number>;
   deckNames(): Promise<string[]>;
   createDeck(deck: string): Promise<number>;
@@ -45,15 +53,20 @@ async function invoke<T>(action: AnkiAction, params?: AnkiParams): Promise<T> {
   try {
     response = await fetch(ANKI_CONNECT_URL, {
       method: "POST",
+      mode: "cors",
+      cache: "default",
+      credentials: "omit",
       headers: { "Content-Type": "application/json" },
+      redirect: "follow",
+      referrerPolicy: "no-referrer",
       body: JSON.stringify(body),
     });
   } catch (error: unknown) {
-    throw new Error(`Could not reach AnkiConnect at ${ANKI_CONNECT_URL}. Open Anki, install/enable AnkiConnect, then try again.`);
+    throw new Error(`Could not reach AnkiConnect at ${ANKI_CONNECT_URL} from ${currentOrigin()}. Open Anki, install/enable AnkiConnect, then try again.`);
   }
 
   if (!response.ok) {
-    throw new Error(`AnkiConnect returned HTTP ${response.status}.`);
+    throw new Error(`AnkiConnect returned HTTP ${response.status} for ${currentOrigin()}. Add this exact origin to AnkiConnect's webCorsOriginList, then restart Anki.`);
   }
 
   const json = (await response.json()) as AnkiConnectResponse<T>;
@@ -68,6 +81,7 @@ async function invoke<T>(action: AnkiAction, params?: AnkiParams): Promise<T> {
 
 export function createRealAnkiClient(): AnkiClient {
   return {
+    requestPermission: () => invoke<AnkiPermissionResult>("requestPermission"),
     version: () => invoke<number>("version"),
     deckNames: () => invoke<string[]>("deckNames"),
     createDeck: (deck) => invoke<number>("createDeck", { deck }),
@@ -91,6 +105,7 @@ export function createMockAnkiClient(): AnkiClient {
   };
 
   return {
+    requestPermission: async () => logPayload("requestPermission", undefined, { permission: "granted", requireApiKey: false, version: ANKI_CONNECT_VERSION }),
     version: async () => logPayload("version", undefined, ANKI_CONNECT_VERSION),
     deckNames: async () => logPayload("deckNames", undefined, ["meguro::Demo", "Japanese", "Default"]),
     createDeck: async (deck) => logPayload("createDeck", { deck }, Date.now()),
@@ -101,6 +116,14 @@ export function createMockAnkiClient(): AnkiClient {
 }
 
 export async function validateAnkiConnection(client: AnkiClient): Promise<number> {
+  const permission = await client.requestPermission();
+  if (permission.permission !== "granted") {
+    throw new Error(`AnkiConnect denied permission for ${currentOrigin()}. Approve the Anki popup or add this exact origin to webCorsOriginList, then restart Anki.`);
+  }
+  if (permission.requireApiKey) {
+    throw new Error("AnkiConnect requires an API key, but meguro is not configured with one.");
+  }
+
   const version = await client.version();
   if (version < ANKI_CONNECT_VERSION) {
     throw new Error(`AnkiConnect API v${version} is running, but meguro expects v${ANKI_CONNECT_VERSION}. Update AnkiConnect and restart Anki.`);
@@ -137,4 +160,8 @@ function toAnkiConnectNote(note: MeguroNoteExport) {
       },
     },
   };
+}
+
+function currentOrigin(): string {
+  return typeof window === "undefined" ? "this environment" : window.location.origin;
 }
