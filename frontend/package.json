@@ -22,5 +22,8 @@
     "tailwindcss": "^4.3.0",
     "typescript": "latest",
     "vite": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.1"
   }
 }

@@ -1,27 +1,31 @@
+name: meguro
+
 services:
   backend:
     build:
       context: ./backend
+    restart: unless-stopped
     environment:
       JITENDEX_URL: https://github.com/stephenmk/stephenmk.github.io/releases/latest/download/jitendex-yomitan.zip
       DICTIONARY_DB_PATH: /data/jitendex.sqlite
       PORT: "4001"
+      HOST: 0.0.0.0
       ALLOW_REINDEX: "false"
     volumes:
       - dictionary-data:/data
     ports:
-      - "4001:4001"
+      - "127.0.0.1:4001:4001"
 
   frontend:
     build:
       context: ./frontend
+      args:
+        VITE_DICTIONARY_API_BASE: https://api.meguro.yuan.tokyo
+    restart: unless-stopped
     depends_on:
       - backend
-    environment:
-      VITE_DICTIONARY_PROXY_TARGET: http://backend:4001
-      VITE_ALLOW_DICTIONARY_REINDEX: "false"
     ports:
-      - "4000:4000"
+      - "127.0.0.1:4000:80"
 
 volumes:
   dictionary-data:
