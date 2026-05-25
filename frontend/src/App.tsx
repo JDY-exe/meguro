@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { AppHeader } from "./components/AppHeader";
-import { DictionaryPanel } from "./components/DictionaryPanel";
+// import { DictionaryPanel } from "./components/DictionaryPanel";
 import { DictionarySearchModal } from "./components/DictionarySearchModal";
 import { ExportButton } from "./components/ExportButton";
 import { ExportModal } from "./components/ExportModal";
 import { PayloadPanel } from "./components/PayloadPanel";
 import { TermBuilder } from "./components/TermBuilder";
 import type { AnkiClient } from "./services/ankiConnect";
-import { createMockAnkiClient, createRealAnkiClient, validateAnkiConnection, validateMeguroModel } from "./services/ankiConnect";
+import { createRealAnkiClient, validateAnkiConnection, validateMeguroModel } from "./services/ankiConnect";
 import { buildAnkiFields, createEmptyEntry, formatInlineFurigana, MAX_MEGURO_TERMS, stripInlineFurigana, validateEntries } from "./services/cardBuilder";
 import { getDictionaryStatus, hydrateDictionaryEntries, reindexDictionary, searchDictionaryHeadwords } from "./services/dictionary";
 import { dictionarySelectionsToHtml, markdownToSafeHtml } from "./services/markdown";
@@ -18,7 +18,6 @@ import "./styles.css";
 function App() {
   const [entries, setEntries] = useState<CardEntry[]>([createEmptyEntry(), createEmptyEntry()]);
   const [dictionaryStatus, setDictionaryStatus] = useState<DictionaryStatus>({ state: "idle" });
-  const [mockMode, setMockMode] = useState(() => localStorage.getItem("meguro:mock-anki") === "true");
   const [decks, setDecks] = useState<string[]>([]);
   const [selectedDeck, setSelectedDeck] = useState("meguro::Demo");
   const [ankiMessage, setAnkiMessage] = useState("Real AnkiConnect mode is on. Anki must be running with AnkiConnect enabled.");
@@ -31,30 +30,31 @@ function App() {
   const [dictionarySearchError, setDictionarySearchError] = useState<string | null>(null);
   const [isSearchingDictionary, setIsSearchingDictionary] = useState(false);
   const dictionarySearchRequestId = useRef(0);
-  const allowDictionaryReindex = import.meta.env.VITE_ALLOW_DICTIONARY_REINDEX === "true";
+  // const allowDictionaryReindex = import.meta.env.VITE_ALLOW_DICTIONARY_REINDEX === "true";
 
   const usableEntries = useMemo(() => entries.filter((entry) => entry.term.trim()), [entries]);
   const fields = useMemo(() => buildAnkiFields(usableEntries), [usableEntries]);
   const validationErrors = useMemo(() => validateEntries(usableEntries), [usableEntries]);
-  const ankiClient = useMemo<AnkiClient>(() => (mockMode ? createMockAnkiClient() : createRealAnkiClient()), [mockMode]);
+  const ankiClient = useMemo<AnkiClient>(() => createRealAnkiClient(), []);
+
+  // Temporarily disable frontend Jitendex status/reindex work while this screen is payload-only.
+  // useEffect(() => {
+  //   void refreshDictionaryStatus();
+  // }, []);
+  //
+  // useEffect(() => {
+  //   if (dictionaryStatus.state !== "loading" && dictionaryStatus.state !== "downloading") {
+  //     return;
+  //   }
+  //   const statusTimer = window.setInterval(() => void refreshDictionaryStatus(), 1500);
+  //   return () => window.clearInterval(statusTimer);
+  // }, [dictionaryStatus.state]);
 
   useEffect(() => {
-    void refreshDictionaryStatus();
-  }, []);
-
-  useEffect(() => {
-    if (dictionaryStatus.state !== "loading" && dictionaryStatus.state !== "downloading") {
-      return;
-    }
-    const statusTimer = window.setInterval(() => void refreshDictionaryStatus(), 1500);
-    return () => window.clearInterval(statusTimer);
-  }, [dictionaryStatus.state]);
-
-  useEffect(() => {
-    localStorage.setItem("meguro:mock-anki", String(mockMode));
-    setAnkiMessage(mockMode ? "Mock mode is on. Exports log AnkiConnect requests to the console." : "Real AnkiConnect mode is on. Anki must be running with AnkiConnect enabled.");
+    localStorage.removeItem("meguro:mock-anki");
+    setAnkiMessage("Real AnkiConnect mode is on. Anki must be running with AnkiConnect enabled.");
     void loadAnkiDecks();
-  }, [ankiClient, mockMode]);
+  }, [ankiClient]);
 
   const loadAnkiDecks = async () => {
     try {
@@ -63,7 +63,7 @@ function App() {
       const deckNames = await ankiClient.deckNames();
       setDecks(deckNames);
       setSelectedDeck((current) => (current.trim() ? current : deckNames[0] ?? ""));
-      setAnkiMessage(`${mockMode ? "Mock AnkiConnect" : "AnkiConnect"} v${version} ready. Loaded ${deckNames.length} deck${deckNames.length === 1 ? "" : "s"}.`);
+      setAnkiMessage(`AnkiConnect v${version} ready. Loaded ${deckNames.length} deck${deckNames.length === 1 ? "" : "s"}.`);
     } catch (error: unknown) {
       setDecks([]);
       setAnkiMessage(errorMessage(error));
@@ -258,7 +258,7 @@ function App() {
       setAnkiMessage("Sending note to AnkiConnect...");
       const noteId = await ankiClient.addNote({ deckName, fields, tags: [] });
       setSelectedDeck(deckName);
-      setAnkiMessage(`Exported note ${noteId}. ${mockMode ? "Check the console for the mocked addNote payload." : ""}`);
+      setAnkiMessage(`Exported note ${noteId}.`);
     } catch (error: unknown) {
       setAnkiMessage(errorMessage(error));
     } finally {
@@ -272,13 +272,13 @@ function App() {
 
       <section className="grid items-start gap-5 lg:grid-cols-[minmax(0,340px)_minmax(0,1fr)_minmax(150px,0.28fr)]">
         <aside className="grid min-w-0 gap-5 lg:sticky lg:top-5 lg:max-w-[340px]">
-          <DictionaryPanel allowReindex={allowDictionaryReindex} status={dictionaryStatus} onResetDictionary={resetDictionary} />
+          {/* <DictionaryPanel allowReindex={allowDictionaryReindex} status={dictionaryStatus} onResetDictionary={resetDictionary} /> */}
           <PayloadPanel fields={fields} />
         </aside>
 
         <TermBuilder
           entries={entries}
-          isDictionaryReady={dictionaryStatus.state === "ready"}
+          isDictionaryReady={false}
           onAddEntry={addEntry}
           onChangeDefinition={updateDefinition}
           onRemoveEntry={removeEntry}
@@ -295,14 +295,12 @@ function App() {
           decks={decks}
           isExporting={isExporting}
           isLoadingDecks={isLoadingDecks}
-          mockMode={mockMode}
           selectedDeck={selectedDeck}
           validationErrors={validationErrors}
           onClose={() => setIsExportModalOpen(false)}
           onExport={exportToAnki}
           onRefreshDecks={loadAnkiDecks}
           onSelectedDeckChange={setSelectedDeck}
-          onSetMockMode={setMockMode}
         />
       )}
 

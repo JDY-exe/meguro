@@ -10,6 +10,6 @@ COPY src src
 RUN npm run build
 
 ENV NODE_ENV=production
-EXPOSE 3001
+EXPOSE 4001
 
 CMD ["npm", "start"]

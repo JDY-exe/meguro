@@ -11,6 +11,6 @@ COPY tsconfig.test.json tsconfig.test.json
 COPY vite.config.ts vite.config.ts
 COPY src src
 
-EXPOSE 5173
+EXPOSE 4000
 
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "4000"]
