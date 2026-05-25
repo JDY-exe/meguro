@@ -37,18 +37,17 @@ function App() {
   const validationErrors = useMemo(() => validateEntries(usableEntries), [usableEntries]);
   const ankiClient = useMemo<AnkiClient>(() => createRealAnkiClient(), []);
 
-  // Temporarily disable frontend Jitendex status/reindex work while this screen is payload-only.
-  // useEffect(() => {
-  //   void refreshDictionaryStatus();
-  // }, []);
-  //
-  // useEffect(() => {
-  //   if (dictionaryStatus.state !== "loading" && dictionaryStatus.state !== "downloading") {
-  //     return;
-  //   }
-  //   const statusTimer = window.setInterval(() => void refreshDictionaryStatus(), 1500);
-  //   return () => window.clearInterval(statusTimer);
-  // }, [dictionaryStatus.state]);
+  useEffect(() => {
+    void refreshDictionaryStatus();
+  }, []);
+
+  useEffect(() => {
+    if (dictionaryStatus.state !== "loading" && dictionaryStatus.state !== "downloading") {
+      return;
+    }
+    const statusTimer = window.setInterval(() => void refreshDictionaryStatus(), 1500);
+    return () => window.clearInterval(statusTimer);
+  }, [dictionaryStatus.state]);
 
   useEffect(() => {
     localStorage.removeItem("meguro:mock-anki");
@@ -278,7 +277,7 @@ function App() {
 
         <TermBuilder
           entries={entries}
-          isDictionaryReady={false}
+          isDictionaryReady={dictionaryStatus.state === "ready"}
           onAddEntry={addEntry}
           onChangeDefinition={updateDefinition}
           onRemoveEntry={removeEntry}
